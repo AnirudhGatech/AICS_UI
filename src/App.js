@@ -23,7 +23,7 @@ const theme = createTheme({
     },
   },
   shape: {
-    borderRadius: 15, // Applies globally to components like Paper, Button, etc.
+    borderRadius: 15,
   },
   shadows: ['none', '0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14), 0px 1px 10px 0px rgba(0,0,0,0.12)'],
 });
@@ -34,7 +34,7 @@ const ChatContainer = styled(Container)(({ theme }) => ({
   flexDirection: 'column',
   justifyContent: 'space-between',
   padding: '2rem',
-  backgroundColor: theme.palette.background.default, // Using the gradient here
+  backgroundColor: theme.palette.background.default,
 }));
 
 const ChatBubble = styled(Paper)(({ theme }) => ({
@@ -44,7 +44,8 @@ const ChatBubble = styled(Paper)(({ theme }) => ({
   borderRadius: '20px',
   wordWrap: 'break-word',
   display: 'flex',
-  alignItems: 'center',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
   backgroundColor: theme.palette.common.white,
   boxShadow: theme.shadows[1],
 }));
@@ -88,24 +89,22 @@ function SearchComponent() {
         body: JSON.stringify({ search_query: searchQuery }),
       });
   
-      console.log('Status Code:', response.status); // Log status code
-  
       if (!response.ok) {
         throw new Error('Response not OK');
       }
   
-      // Assuming the server response is HTML content
-      const htmlContent = await response.text(); // Use .text() to get HTML response
-  
+      const textContent = await response.text();
+      const paragraphs = textContent.split('\n').filter(paragraph => paragraph.trim() !== '');
+
       setChat((prevChat) => [
         ...prevChat,
-        { type: 'bot', text: htmlContent }, // Directly using HTML content as text
+        { type: 'bot', text: paragraphs },
       ]);
     } catch (error) {
-      console.error("Error:", error.message); // Log the error message
+      console.error("Error:", error.message);
       setChat((prevChat) => [
         ...prevChat,
-        { type: 'bot', text: 'Sorry, there was an error processing your request.' },
+        { type: 'bot', text: ['Sorry, there was an error processing your request.'] },
       ]);
     } finally {
       setIsLoading(false);
@@ -126,7 +125,7 @@ function SearchComponent() {
       <CssBaseline />
       <ChatContainer maxWidth="md">
         <Typography variant="h5" align="center" gutterBottom style={{ color: theme.palette.text.primary }}>
-          GTSearch 
+          GTSearch
         </Typography>
         <div style={{ overflowY: 'scroll', flexGrow: 1 }}>
           {chat.map((message, index) => (
@@ -139,7 +138,11 @@ function SearchComponent() {
               ) : (
                 <BotBubble elevation={3}>
                   <StyledAvatar alt="Bot" src="/bot-avatar.png" />
-                  <Typography variant="body2">{message.text}</Typography>
+                  {message.text.map((p, idx) => (
+                    <Typography key={idx} variant="body2" component="div">
+                      {p.startsWith('-') || p.startsWith('*') ? <ul><li>{p.substring(1).trim()}</li></ul> : p}
+                    </Typography>
+                  ))}
                 </BotBubble>
               )}
             </div>
@@ -161,8 +164,8 @@ function SearchComponent() {
               onChange={(e) => setSearchQuery(e.target.value)}
               InputProps={{
                 style: {
-                  backgroundColor: theme.palette.common.white, // For contrast and readability
-                },
+                  backgroundColor: theme.palette.common.white,
+                }
               }}
             />
           </Grid>
@@ -178,6 +181,9 @@ function SearchComponent() {
             </Button>
           </Grid>
         </Grid>
+        <Typography variant="body2" style={{ color: theme.palette.text.secondary, fontSize: '0.75rem', textAlign: 'center', marginTop: '1rem' }}>
+          GTSearch is prone to errors and may present inaccurate information. It is wise to verify its responses for accuracy, especially when dealing with crucial information.
+        </Typography>
       </ChatContainer>
     </ThemeProvider>
   );
